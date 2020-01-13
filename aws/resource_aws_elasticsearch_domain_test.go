@@ -1686,13 +1686,6 @@ resource "aws_elasticsearch_domain" "test" {
 
 func testAccESDomainConfig_ClusterConfig_UltraWarmEnabled(randInt int) string {
 	return fmt.Sprintf(`
-
-data "aws_availability_zones" "available" {
-  # Error creating Elastichsearch domain: Unsupported: UltraWarm Elasticsearch Domains are not yet supported in your requested Availability Zone.
-  blacklisted_zone_ids = ["usw2-az4"]
-  state                = "available"
-}
-
 resource "aws_elasticsearch_domain" "test" {
   domain_name = "tf-test-%d"
   elasticsearch_version = "6.8"
