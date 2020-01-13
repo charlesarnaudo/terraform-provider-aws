@@ -759,6 +759,35 @@ func TestAccAWSElasticSearchDomain_update_version(t *testing.T) {
 		}})
 }
 
+func TestAccAWSElasticSearchDomain_ultrawarm(t *testing.T) {
+	var domain elasticsearch.ElasticsearchDomainStatus
+	ri := acctest.RandInt()
+	resourceName := "aws_elasticsearch_domain.test"
+	resourceId := fmt.Sprintf("tf-test-%d", ri)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t); testAccPreCheckIamServiceLinkedRoleEs(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckESDomainDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccESDomainConfig_ClusterConfig_UltraWarmEnabled(ri),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckESDomainExists(resourceName, &domain),
+					resource.TestCheckResourceAttr(
+						resourceName, "warm_enabled", "true"),
+				),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateId:     resourceId,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func testAccCheckESNumberOfSecurityGroups(numberOfSecurityGroups int, status *elasticsearch.ElasticsearchDomainStatus) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		count := len(status.VPCOptions.SecurityGroupIds)
@@ -1653,4 +1682,44 @@ resource "aws_elasticsearch_domain" "test" {
 	]
 }
 `, randInt, randInt, randInt, randInt, randInt, cognitoOptions)
+}
+
+func testAccESDomainConfig_ClusterConfig_UltraWarmEnabled(randInt int) string {
+	return fmt.Sprintf(`
+
+data "aws_availability_zones" "available" {
+  # Error creating Elastichsearch domain: Unsupported: UltraWarm Elasticsearch Domains are not yet supported in your requested Availability Zone.
+  blacklisted_zone_ids = ["usw2-az4"]
+  state                = "available"
+}
+
+resource "aws_elasticsearch_domain" "test" {
+  domain_name = "tf-test-%d"
+  elasticsearch_version = "6.8"
+
+  cluster_config {
+    instance_type  = "t2.small.elasticsearch"
+    instance_count = 6
+
+    dedicated_master_enabled = true
+    dedicated_master_type    = "c5.large.elasticsearch"
+    dedicated_master_count   = 3
+
+    zone_awareness_enabled = true
+
+    zone_awareness_config {
+      availability_zone_count = 3
+    }
+
+    warm_enabled = true
+    warm_count   = 6
+    warm_type    = "ultrawarm1.medium.elasticsearch"
+  }
+
+  ebs_options {
+    ebs_enabled = true
+    volume_size = 10
+  }
+}
+`, randInt)
 }

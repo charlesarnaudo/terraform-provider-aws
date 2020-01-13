@@ -211,6 +211,20 @@ func resourceAwsElasticSearchDomain() *schema.Resource {
 							Type:     schema.TypeBool,
 							Optional: true,
 						},
+						"warm_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"warm_count": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Default:  3,
+						},
+						"warm_type": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Default:  "ultrawarm1.medium.elasticsearch",
+						},
 					},
 				},
 			},
